@@ -1,0 +1,570 @@
+
+
+<!-- saved from url=(0020)https://dellsale.ru/ -->
+<html lang="ru"><link type="text/css" rel="stylesheet" id="dark-mode-custom-link"><link type="text/css" rel="stylesheet" id="dark-mode-general-link"><style lang="en" type="text/css" id="dark-mode-custom-style"></style><style lang="en" type="text/css" id="dark-mode-native-style"></style><style lang="en" type="text/css" id="dark-mode-native-sheet"></style><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="icon" href="https://dellsale.ru/favicon.svg" sizes="16x16" type="image/svg+xml">
+<meta name="title" content="Conway&#39;s Game of Life">
+<meta name="description" content="
+Conway&#39;s Game of Life is a game invented by mathematician John Conway in 1970. The rules are as follows:
+
+Each cell lives in a square in a rectangular grid. A cell can either be dead or alive (alive cells are coloured blue in our demo). Before you start the game, you need to provide an initial state. You can do this in the above example by clicking on squares, or by picking a preset from the dropdown menu.
+">
+<title>Game of Life</title>
+<script type="text/javascript">
+//Author Ivanov Denis
+//email denis at dellsale.ru :)
+
+
+	var activeElement_old,activeElement_new;
+	var initialSize;
+
+
+	function mouseEnter() {
+	if (window.event) activeElement_new = window.event.relatedTarget;
+	if ((activeElement_new) && (activeElement_new.tagName = 'LI')) {
+		initialSize = activeElement_new.style.fontSize;
+		if ((activeElement_old) && (activeElement_old != activeElement_new)){
+			activeElement_old.style.fontSize=initialSize;
+			}
+		activeElement_new.style.fontSize = 40;
+		activeElement_old = activeElement_new;
+		}
+	}
+
+	function mouseLeave() {
+		if (activeElement_old) {
+			activeElement_old.style.fontSize=initialSize;
+			}
+	}
+</script>
+<script>
+
+	function Life (_sizeX, _sizeY) {
+
+		let sizeX = _sizeX;
+        let sizeY = _sizeY;
+		let even = false;
+        let aliveCount = 0;
+        let upperLayer = new Array();
+
+ 		let world = createWorld();
+
+
+		randomFill();
+		//customFill();
+
+		function makeWorld(x, y) {
+			aliveCount = 0;
+			let newWorld = new Array(x);
+			for (let i=0; i<x; i++) {
+				newWorld[i]= new Array(y);
+				for (let j=0; j<y; j++) {
+					newWorld[i][j] = new Map();
+					newWorld[i][j].set(even, false);
+					newWorld[i][j].set(!even, false);
+				}
+			}
+			return newWorld;
+			}
+
+		function randomFill() {
+			for (let x=0; x<sizeX; x++)
+				for (let y=0; y<sizeY; y++)
+					if (Math.random() > 0.9) {
+						world[x][y].set(even,true);
+						aliveCount ++;
+						}
+					else world[x][y].set(even,false);
+		}
+
+		function customFill() {
+			aliveCount = 3;
+			world[3][1].set(even,true);
+			world[3][2].set(even,true);
+			world[3][3].set(even,true);
+		}
+
+		function createWorld() {
+			return makeWorld(sizeX, sizeY);
+		}
+
+		function getCellState(x, y) {
+			//if ((x<0) || (y<0) || (x>=sizeX) || (y>=sizeY)) return false;
+			//else return world[x][y].get(even);
+			if (x<0) x = sizeX - (-x % sizeX);
+			if (y<0) y = sizeY - (-y % sizeY);
+			if (x>=sizeX) x = x % sizeX;
+			if (y>=sizeY) y = y % sizeY;
+
+			return world[x][y].get(even);
+		}
+
+		function getCellToShow(x, y) {
+			return getCellState(x, y) 
+		}
+
+		function showOverlay(x,y) {
+			let layerUp=false;
+			let inside=false
+			for (let i=0; i<upperLayer.length; i++)
+				if (upperLayer[i].inBody(x,y)) {
+					layerUp = layerUp || upperLayer[i].getAbsolutePixel(x,y);
+					inside = true
+					if (layerUp) {
+						break
+					}
+				}
+			return {inside, layerUp};
+		}
+
+		function getCellPrevState(x,y) {
+			//if ((x<0) || (y<0) || (x>=sizeX) || (y>=sizeY)) return false;
+			//else return world[x][y].get(even);
+			if (x<0) x = sizeX - (-x % sizeX);
+			if (y<0) y = sizeY - (-y % sizeY);
+			if (x>=sizeX) x = x % sizeX;
+			if (y>=sizeY) y = y % sizeY;
+			if (y>=sizeY) y = y % sizeY;
+
+			return world[x][y].get(!even);
+		}
+
+		function setCellState(x,y, state) {
+			 world[x][y].set(!even,state); }
+
+
+		function countAliveNeighbors(cellX, cellY) {
+			let AliveNeighborsCount=0;
+			for (let x=cellX-1; x<=cellX+1; x++)
+				for (let y=cellY-1; y<=cellY+1; y++) 
+					if (!((x==cellX)&&(y==cellY)) && (getCellState(x,y))) AliveNeighborsCount++;
+			return AliveNeighborsCount;
+		}
+
+		function youCanLive(cellX, cellY) {
+			let liveNeighborCount=countAliveNeighbors(cellX, cellY);
+			if ( (liveNeighborCount==2) || (liveNeighborCount==3) ) return true;
+			else return false;
+		}
+
+		function youMustBorn(cellX, cellY) {
+			let liveNeighborCount=countAliveNeighbors(cellX, cellY);
+			if ( (liveNeighborCount==3) )return true;
+			else return false;
+		}
+
+		function iteration() {
+			aliveCount=0;
+			for (let x=0; x<sizeX; x++)
+				for (let y=0; y<sizeY; y++)
+					if (getCellState(x,y)) {
+						let ycl=youCanLive(x,y);
+						setCellState(x,y, ycl);
+						ycl == true ? aliveCount++ : 0;
+					}
+					else {
+						let ymb=youMustBorn(x,y)
+						setCellState(x,y, ymb);
+						ymb == true? aliveCount++ : 0;
+						}
+			even = !even;
+		}
+
+		function putInWorld(x, y, item) {
+			let itemBody = item.getBody();
+			for (let i = 0; i<itemBody.length; i++)
+				for (let j=0; j<itemBody[i].length; j++)
+					if ((itemBody[i][j]) && (!getCellState(x+i,y+j))) {
+						world[x+i][y+j].set(even,true);
+						aliveCount++;
+						}
+		}
+
+		function addToUpperLayer(item) {
+			upperLayer.push(item);
+		}
+
+		function resize(x, y) {
+			if (x>sizeX) {// если требуется увеличение размера мира по X
+				for (let i=0; i<x-sizeX; i++) {
+					world.push(new Array(sizeY));
+					for (let j=0; j<sizeY; j++) {
+						world[world.length-1][j] = new Map();
+						world[world.length-1][j].set(even, false);
+						world[world.length-1][j].set(!even, false);
+					}
+				}
+				sizeX=world.length;
+			}
+			else if (x<sizeX) {//если требуется уменьшение размера по X
+				for (i=0; i<sizeX-x; i++)
+					world.pop();
+				sizeX=world.length;
+			}
+
+			if (y>sizeY) {//если требуется увеличение размера по Y
+				for (let i=0; i<sizeX; i++)
+					for (let j=0; j<y-sizeY; j++) {
+						world[i].push(new Map());
+						world[i][world[i].length-1].set(even, false);
+						world[i][world[i].length-1].set(!even, false);
+					}
+				sizeY=world[0].length;
+			}
+			else if (y<sizeY) { //если требуется уменьшение размера по Y
+				for (let i=0; i<sizeX; i++)
+					for (let j=0; j<sizeY-y; j++)
+						world[i].pop();
+				sizeY=world[0].length;
+			}
+		}
+
+		this.iteration = iteration;
+		this.getCellState = getCellState;
+		this.getCellPrevState = getCellPrevState;
+		this.getCellToShow = getCellToShow;
+		this.putInWorld = putInWorld;
+		this.addToUpperLayer = addToUpperLayer;
+		this.showOverlay = showOverlay;
+		this.resize = resize;
+		this.getAliveCount = function() { return aliveCount; };
+		this.getUpperLayer = function () { return upperLayer; };
+	}
+
+	function worldElement (x = 0, y = 0, arr) {
+
+		if (!Array.isArray(arr)) return;
+
+		let posX=0;
+		let posY=0; //текущее положение
+		let body=0;
+		let width = 0;
+		let height = 0;
+
+		changeElement(x, y, arr);
+
+		function inBody(x, y) {
+			if ( (x >= posX) && (x < posX+width) &&
+				 (y >= posY) && (y < posY+height) ) return true;
+			return false;
+			}
+
+		function rotate() {
+			size=Math.floor(width/2);
+
+			if (width>height)
+				for (let j=0; j<width; j++)
+					for (let i=0; i<width-height; i++)  //добавляем ширину
+						body[j].push(0);
+			else
+				for (let i=0; i<height-width; i++) {
+					body[width+i] = new Array();
+					for (let j=0; j<height; j++)
+						body[width+i].push(0);
+				}
+
+			for (let i=0; i<=size; i++) {
+				let last= width > height ? width-1-i : height-1-i;
+				for (let offset=0; i+offset<last; offset++) {
+					let temp = body[i][i+offset];
+					body[i][i+offset] = body[i+offset][last];
+					body[i+offset][last] = body[last][last-offset];
+					body[last][last-offset] = body[last-offset][i];
+					body[last-offset][i] = temp;
+				}
+			}
+
+			if (width>height)
+				for (let i=0; i<width-height; i++)
+					body.shift();
+			else
+				for (let i=0; i<height; i++)
+					for (let j=0; j<height-width; j++)
+						body[i].pop();
+			width = body.length;
+			height = body[0].length;
+		}
+
+
+		function mirror() {
+				let size=Math.floor(width/2);
+				for (let i=0; i<size; i++)
+					for (let j=0; j<height; j++) {
+						let temp=body[i][j];
+						body[i][j]=body[width-i-1][j];
+						body[width-i-1][j]=temp;
+					}
+			}
+
+
+		function getAbsolutePixel(x, y) { return body[x-posX][y-posY]; }
+
+		function changeElement(x, y, newbody) {
+				posX = x;
+			 	posY = y;
+				changeBody(newbody);
+ }
+
+		function changeBody(newbody) {
+			body = newbody;
+			width = newbody.length;
+			height = newbody[0].length;
+		}
+
+		this.inBody = inBody;
+		this.changeElement = changeElement;
+		this.changeBody = changeBody;
+		this.getBody = function() { return body; }
+		this.getAbsolutePixel = getAbsolutePixel;
+		this.rotate = rotate;
+		this.mirror = mirror;
+		}
+</script>
+<script type="text/javascript">
+
+	function ShowWorld() {
+		let table = document.getElementById('world');
+		//tablebody = table.getElementsByTagName('tbody');
+		let myrows = table.getElementsByTagName("tr");
+		for (let x=0; x<wordlSizeX; x++)
+			for (let y=0; y<worldSizeY; y++) {
+				mycell = myrows[y].getElementsByTagName("td")[x];
+				curState = myWorld.getCellToShow(x,y);
+				prevState = myWorld.getCellPrevState(x,y);
+				if (curState && !prevState) //если рождение
+					mycell.style.background = "rgb(0,255,0)";
+				else if (!curState && prevState)
+					mycell.style.background = "rgb(0,50,0)"; //смерть
+				else if (curState && prevState)	//незименно жива
+					mycell.style.background = "rgb(0,255,0)";
+				else 	//незименно мертва
+					mycell.style.background = "rgb(0,50,0)";
+			}
+	}
+
+	function CreateTable() {
+		let table = document.getElementById('world');
+		table.cellSpacing='0px';
+		//table.style.border-radius='2px';
+		for (let y=0; y<worldSizeY; y++) {
+			let row = table.insertRow();
+			row.style.height='5px';
+			for (let x=0; x<wordlSizeX; x++) {
+				let cell = row.insertCell();
+				cell.addEventListener("mouseenter", function() {
+												myWorld.iteration();
+												ShowWorld();
+												} );
+				cell.style.width="5px";
+				cell.style.border='0px';}
+		}
+	}
+
+	function ShowWorldOnCanvas() {
+
+
+		for (let x=0; x<wordlSizeX; x++)
+			for (let y=0; y<worldSizeY; y++) {
+				let curState = myWorld.getCellToShow(x,y);
+				let prevState = myWorld.getCellPrevState(x,y);
+				if (curState && !prevState) {//если рождение
+					if (!copiedBirth) {
+						ctx.fillStyle="rgb(0,255,0)";
+						let offsetX = sizeCell*x;
+						let offsetY = sizeCell*y;
+						ctx.fillRect(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						birth = ctx.getImageData(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						copiedBirth = true; 
+					}
+					else ctx.putImageData(birth, sizeCell*x, sizeCell*y);
+				}
+				if (!curState && prevState) {
+					if (!copiedDeath) {
+						ctx.fillStyle="rgb(0,50,0)"; //смерть
+						let offsetX = sizeCell*x;
+						let offsetY = sizeCell*y;
+						ctx.fillRect(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						death = ctx.getImageData(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						copiedDeath = true; 
+					}
+					else ctx.putImageData(death, sizeCell*x, sizeCell*y);
+				}
+				let temp = myWorld.showOverlay(x,y)
+				if (temp.layerUp){
+					if (!copiedToStAl) {
+						ctx.fillStyle = "rgb(0,200,0)";
+						let offsetX = sizeCell*x;
+						let offsetY = sizeCell*y;
+						ctx.fillRect(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						stillAlive=ctx.getImageData(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						copiedToStAl = true;
+					} else ctx.putImageData(stillAlive, sizeCell*x, sizeCell*y)
+				} else if (temp.inside) {
+					if (!copiedToStDeath) {
+						ctx.fillStyle = "rgb(0,50,0)";
+						let offsetX = sizeCell*x;
+						let offsetY = sizeCell*y;
+						ctx.fillRect(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						stillDeath=ctx.getImageData(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+						copiedToStDeath = true;
+						}
+					else ctx.putImageData(stillDeath, sizeCell*x, sizeCell*y);
+				}
+				// if (curState && prevState)	{//незименно жива
+				// 	if (!copiedToStAl) {
+				// 		ctx.fillStyle = "rgb(0,200,0)";
+				// 		let offsetX = sizeCell*x;
+				// 		let offsetY = sizeCell*y;
+				// 		ctx.fillRect(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+				// 		stillAlive=ctx.getImageData(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+				// 		copiedToStAl = true;
+				// 		}
+				// 	else ctx.putImageData(stillAlive, sizeCell*x, sizeCell*y);
+				// }
+				// if (!curState && !prevState && x <= 29 && y<= 6 )	{//незименно мертва, отрисовываем только в области цифр
+				// 	if (!copiedToStDeath) {
+				// 		ctx.fillStyle = "rgb(0,50,0)";
+				// 		let offsetX = sizeCell*x;
+				// 		let offsetY = sizeCell*y;
+				// 		ctx.fillRect(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+				// 		stillDeath=ctx.getImageData(offsetX, offsetY, sizeCell-sizeCellBorder, sizeCell-sizeCellBorder);
+				// 		copiedToStDeath = true;
+				// 		}
+				// 	else ctx.putImageData(stillDeath, sizeCell*x, sizeCell*y);
+				// }
+			}
+	}
+
+	function DisableEvents() {
+	
+		let origMouseEnter = window.mouseEnter();
+
+		window.mouseEnter = function() {
+			myWorld.iteration();
+			ShowWorld();
+			}
+
+		let origMouseLeave = window.mouseLeave();
+		window.mouseLeave = function () {};
+	}
+	
+</script>
+</head>
+
+<body style="margin: 0px; background: rgb(0, 50, 0);">
+<div>
+<canvas id="canvas" width="1988" height="1134"></canvas>
+<table id="world">
+<tbody>
+</tbody>
+</table>
+</div>
+<script>
+ //mouseEnter();
+
+ let wordlSizeX = 100;
+ let worldSizeY = 50;
+ let sizeCell=7;
+ let sizeCellBorder=3;
+
+ let glider = new worldElement(0, 0, [[0,1,0], [0,0,1], [1,1,1]]);
+ let bomb = new worldElement(0, 0, [[1,1,1], [0,0,1], [1,1,1]]);
+
+ let  numbers = new Array();
+ numbers[0] = [[0,1,1,1,1,0],[1,0,0,0,0,1],[1,0,0,0,0,1],[0,1,1,1,1,0]];
+ numbers[1] = [[0,0,1,0,0,1],[0,1,0,0,0,1],[1,1,1,1,1,1],[0,0,0,0,0,1]];
+ numbers[2] = [[0,1,0,0,0,1],[1,0,0,0,1,1],[1,0,0,1,0,1],[0,1,1,0,0,1]];
+ numbers[3] = [[1,0,0,0,1,0],[1,0,0,0,0,1],[1,0,1,0,0,1],[1,1,0,1,1,0]];
+ numbers[4] = [[0,0,1,1,0,0],[0,1,0,1,0,0],[1,1,1,1,1,1],[0,0,0,1,0,0]];
+ numbers[5] = [[1,1,0,0,1,0],[1,0,1,0,0,1],[1,0,1,0,0,1],[1,0,0,1,1,0]];
+ numbers[6] = [[0,1,1,1,1,0],[1,0,1,0,0,1],[1,0,1,0,0,1],[0,0,0,1,1,0]];
+ numbers[7] = [[1,0,0,0,0,0],[1,0,0,0,1,1],[1,0,0,1,0,0],[1,1,1,0,0,0]];
+ numbers[8] = [[0,1,0,1,1,0],[1,0,1,0,0,1],[1,0,1,0,0,1],[0,1,0,1,1,0]];
+ numbers[9] = [[0,1,1,0,0,0],[1,0,0,1,0,1],[1,0,0,1,0,1],[0,1,1,1,1,0]];
+
+ function rotateGlider() { glider.rotate(); }
+ function rotateBomb() { bomb.rotate(); }
+
+ wordlSizeX = Math.floor(window.innerWidth/sizeCell);
+ worldSizeY = Math.floor(window.innerHeight/sizeCell);
+
+ document.body.style.margin="0px"
+ document.body.style.background="rgb(0,50,0)";
+
+ let myWorld = new Life(wordlSizeX,worldSizeY);
+
+ myWorld.addToUpperLayer(new worldElement(26,1, numbers[0]));
+ myWorld.addToUpperLayer(new worldElement(21,1, numbers[0]));
+ myWorld.addToUpperLayer(new worldElement(16,1, numbers[0]));
+ myWorld.addToUpperLayer(new worldElement(11,1, numbers[0]));
+ myWorld.addToUpperLayer(new worldElement(6,1, numbers[0]));
+ myWorld.addToUpperLayer(new worldElement(1,1, numbers[0]));
+
+ let canvasSizeX = wordlSizeX*sizeCell;
+ let canvasSizeY = worldSizeY*sizeCell;
+ let canvas = document.getElementById('canvas');
+ canvas.width=canvasSizeX;
+ canvas.height=canvasSizeY;
+ const ctx = canvas.getContext("2d", { alpha: false });
+ 		ctx.fillStyle="rgb(0,50,0)";
+		ctx.fillRect(0,0, canvasSizeX, canvasSizeY);
+
+		
+ var stillAlive, death, birth, stillDeath;
+ var copiedToStAl=false;
+ var copiedDeath=false;
+ var copiedBirth=false;
+ var copiedToStDeath=false;
+ 
+ let pause = false;
+ 
+ document.body.addEventListener('click',
+	function (e) {
+		myWorld.putInWorld(Math.floor(e.clientX/sizeCell), Math.floor(e.clientY/sizeCell), glider);
+		});
+ 
+ document.body.addEventListener('contextmenu', 
+	function(e) { 
+		e.preventDefault();
+		pause = !pause;
+		});
+		
+ window.addEventListener("resize", function() {
+		wordlSizeX = Math.floor(window.innerWidth/sizeCell);
+		worldSizeY = Math.floor(window.innerHeight/sizeCell);
+		canvasSizeX = wordlSizeX*sizeCell;
+		canvasSizeY = worldSizeY*sizeCell;
+		canvas.width=canvasSizeX;
+		canvas.height=canvasSizeY;
+ 		ctx.fillStyle="rgb(0,50,0)";
+		ctx.fillRect(0,0, canvasSizeX, canvasSizeY);
+		myWorld.resize(wordlSizeX, worldSizeY);});
+
+
+  document.body.addEventListener('wheel', rotateGlider);
+ //CreateTable();
+ //ShowWorld();
+ ShowWorldOnCanvas();
+ let acOld = 0;
+
+ window.setInterval(function() {
+			if (pause) return;
+			myWorld.iteration();
+			//ShowWorld();
+			ShowWorldOnCanvas();
+			let ac = myWorld.getAliveCount();
+			if (ac != acOld) {
+				myWorld.getUpperLayer()[0].changeBody(numbers[ac % 10]);
+				myWorld.getUpperLayer()[1].changeBody(numbers[Math.floor(ac % 100 / 10)]);
+				myWorld.getUpperLayer()[2].changeBody(numbers[Math.floor(ac % 1000 / 100)]);
+				myWorld.getUpperLayer()[3].changeBody(numbers[Math.floor(ac % 10000 / 1000)]);
+				myWorld.getUpperLayer()[4].changeBody(numbers[Math.floor(ac % 100000 / 10000)]);
+				myWorld.getUpperLayer()[5].changeBody(numbers[Math.floor(ac % 1000000 / 10000)]);
+				acOld = ac;
+				}
+			}, 40);
+
+</script>
+
+
+</body></html>
